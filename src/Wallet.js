@@ -1,67 +1,52 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./Wallet.css";
-import { Pie, Tooltip } from 'recharts';
-// import { RechartsDevtools } from '@recharts/devtools';
 import PieChart from "../src/PieChart";
 import Modal from "../src/Modal";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import foodIcon from "../src/Assets/Group 59.png";
 import travelIcon from "../src/Assets/Group 61.png";
 import entertainmentIcon from "../src/Assets/Group 60.png";
-
-
 
 function Wallet() {
   const [balance, setBalance] = useState(5000);
   const [expense, setExpense] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
 
-
   const [showModal, setShowModal] = useState(false);
   const [IncomeModal, setIncomeModal] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     category: "",
-    date:"",
-    amount:""
+    date: "",
+    amount: ""
   });
-    const [categorySpends, setCategorySpends] = useState({
-    food: 0,
-    entertainment: 0,
-    travel: 0,
-  });
-  const [categoryCount, setCategoryCount] = useState({
-    food: 0,
-    entertainment: 0,
-    travel: 0,
-  });
-    const [errors, setErrors] = useState({});
-    const [editId, setEditId] = useState(null)
-    const { enqueueSnackbar } = useSnackbar();
 
+  const [errors, setErrors] = useState({});
+  const [editId, setEditId] = useState(null);
 
+  const { enqueueSnackbar } = useSnackbar();
 
-      const handleChange = (e) => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
 
-  const validateIncome = ()=>{
+  const validateIncome = () => {
     let tempErrors = {};
-     if (!formData.amount) {
-    tempErrors.amount = "Amount is required";
-  } else if (Number(formData.amount) <= 0) {
-    tempErrors.amount = "Amount must be greater than 0";
-  }
-  setErrors(tempErrors);
-  return Object.keys(tempErrors).length === 0;
+    if (!formData.amount) {
+      tempErrors.amount = "Amount is required";
+    } else if (Number(formData.amount) <= 0) {
+      tempErrors.amount = "Amount must be greater than 0";
+    }
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
 
-  }
-
-   const validate = () => {
+  const validate = () => {
     let tempErrors = {};
 
     if (!formData.title.trim()) {
@@ -72,7 +57,7 @@ function Wallet() {
 
     if (!formData.price) {
       tempErrors.price = "Price is required";
-    } else if (formData.price <= 0) {
+    } else if (Number(formData.price) <= 0) {
       tempErrors.price = "Price must be greater than 0";
     }
 
@@ -80,7 +65,7 @@ function Wallet() {
       tempErrors.category = "Please select a category";
     }
 
-      if (!formData.date) {
+    if (!formData.date) {
       tempErrors.date = "Please select a date";
     }
 
@@ -88,198 +73,166 @@ function Wallet() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  
- const handleIncomeSubmit = (e) => {
-  e.preventDefault();
+  const handleIncomeSubmit = (e) => {
+    e.preventDefault();
 
-  if (validateIncome()) {
-    setBalance(prev => prev + Number(formData.amount));
-
-    setFormData({ amount: "" });
-    setErrors({});
-    setIncomeModal(false);
-  }
-};
-
+    if (validateIncome()) {
+      setBalance((prev) => prev + Number(formData.amount));
+      setFormData({ ...formData, amount: "" });
+      setErrors({});
+      setIncomeModal(false);
+    }
+  };
 
   const handleCancel = () => {
     setErrors({});
-    setShowModal();
-    setIncomeModal();
+    setShowModal(false);
+    setIncomeModal(false);
+    setEditId(null);
   };
 
-const handleAddExpense = (e) => {
-  e.preventDefault();
+  const handleAddExpense = (e) => {
+    e.preventDefault();
 
-  if (!validate()) return;
+    if (!validate()) return;
 
-  const expenseAmount = Number(formData.price);
+    const expenseAmount = Number(formData.price);
 
-  if (expenseAmount > balance) {
-    enqueueSnackbar("Price should not exceed the wallet balance", { variant: "warning" });
-    return;
-  }
-
-  const newExpense = {
-    id: Date.now(),
-    title: formData.title,
-    amount: expenseAmount,
-    category: formData.category,
-    date: formData.date,
-  };
-
-  setExpense(prev => [...prev, newExpense]);
-  setBalance(prev => prev - expenseAmount); // ✅ deduct dynamically
-
-  setFormData({
-    title: "",
-    price: "",
-    category: "",
-    date: "",
-    amount: "",
-  });
-
-  setErrors({});
-  setShowModal(false);
-};
-
-
-
-
-  
-    let foodSpends = 0,
-      entertainmentSpends = 0,
-      travelSpends = 0;
-    let foodCount = 0,
-      entertainmentCount = 0,
-      travelCount = 0;
-
-     const data = [
-  {
-    name: "Food",
-    value: expense
-      .filter(e => e.category === "food")
-      .reduce((sum, e) => sum + e.amount, 0)
-  },
-  {
-    name: "Travel",
-    value: expense
-      .filter(e => e.category === "travel")
-      .reduce((sum, e) => sum + e.amount, 0)
-  },
-   {
-    name: "Entertainment",
-    value: expense
-      .filter(e => e.category === "entertainment")
-      .reduce((sum, e) => sum + e.amount, 0)
-  }
-];
-
-const categoryIcons = {
-  food: foodIcon,
-  travel: travelIcon,
-  entertainment: entertainmentIcon,
-};
-
-const categoryTotals = expense.reduce((acc, curr) => {
-  acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
-  return acc;
-}, {});
-
-const barData = Object.keys(categoryTotals).map((key) => ({
-  name: key,
-  value: categoryTotals[key]
-}));
-
-const totalExpense = expense.reduce(
-  (sum, item) => sum + item.amount,
-  0
-);
-    console.log(expense)
-
-    const handleDelete = (id)=>{
-       const itemToDelete = expense.find(item => item.id === id);
-  if (!itemToDelete) return;
-
-  // Refund the amount back to balance
-  setBalance(prev => prev + Number(itemToDelete.amount));
-
-  // Remove the item from expense list
-  const updatedExpenses = expense.filter(item => item.id !== id);
-  setExpense(updatedExpenses);
-      
+    if (expenseAmount > balance) {
+      enqueueSnackbar("Price should not exceed the wallet balance", { variant: "warning" });
+      return;
     }
 
-    const handleUpdateExpense = (e) => {
-  e.preventDefault();
+    const newExpense = {
+      id: Date.now(),
+      title: formData.title,
+      amount: expenseAmount,
+      category: formData.category,
+      date: formData.date
+    };
 
-  if (!validate()) return;
+    setExpense((prev) => [...prev, newExpense]);
+    setBalance((prev) => prev - expenseAmount);
 
-  const newAmount = Number(formData.price);
+    setFormData({
+      title: "",
+      price: "",
+      category: "",
+      date: "",
+      amount: ""
+    });
 
-  const oldItem = expense.find(item => item.id === editId);
-  if (!oldItem) return;
+    setErrors({});
+    setShowModal(false);
+  };
 
-  const oldAmount = Number(oldItem.amount);
+  const handleDelete = (id) => {
+    const itemToDelete = expense.find((item) => item.id === id);
+    if (!itemToDelete) return;
 
-  const diff = oldAmount - newAmount;
+    setBalance((prev) => prev + Number(itemToDelete.amount));
+    setExpense((prev) => prev.filter((item) => item.id !== id));
+  };
 
-  // If new amount is higher, check balance
-  if (diff < 0 && Math.abs(diff) > balance) {
-    enqueueSnackbar("Price should not exceed the wallet balance", { variant: "warning" });
-    return;
-  }
+  const handleEdit = (item) => {
+    setFormData({
+      title: item.title,
+      price: item.amount,
+      category: item.category,
+      date: item.date,
+      amount: ""
+    });
+    setEditId(item.id);
+    setShowModal(true);
+  };
 
-  // Update balance
-  setBalance(prev => prev + diff);
+  const handleUpdateExpense = (e) => {
+    e.preventDefault();
 
-  const updated = expense.map(item =>
-    item.id === editId
-      ? {
-          ...item,
-          title: formData.title,
-          amount: newAmount,
-          category: formData.category,
-          date: formData.date,
-        }
-      : item
-  );
+    if (!validate()) return;
 
-  setExpense(updated);
+    const newAmount = Number(formData.price);
+    const oldItem = expense.find((item) => item.id === editId);
+    if (!oldItem) return;
 
-  // Reset form + close modal
-  setEditId(null);
-  setShowModal(false);
+    const oldAmount = Number(oldItem.amount);
+    const diff = oldAmount - newAmount;
 
-  setFormData({
-    title: "",
-    price: "",
-    category: "",
-    date: "",
-    amount: "",
-  });
+    if (diff < 0 && Math.abs(diff) > balance) {
+      enqueueSnackbar("Price should not exceed the wallet balance", { variant: "warning" });
+      return;
+    }
 
-  setErrors({});
-};
+    setBalance((prev) => prev + diff);
 
-   const handleEdit = (item) => {
-       setFormData({
-    title: item.title,
-    price: item.amount,   // important: use amount
-    category: item.category,
-    date: item.date,
-    amount: ""
-  });
-  setEditId(item.id);
-  setShowModal(true); // open expense modal
-      }
-    const maxBarValue = Math.max(...barData.map(item => item.value), 1);
+    const updated = expense.map((item) =>
+      item.id === editId
+        ? {
+            ...item,
+            title: formData.title,
+            amount: newAmount,
+            category: formData.category,
+            date: formData.date
+          }
+        : item
+    );
 
+    setExpense(updated);
 
-    useEffect(() => {
-    //Check localStorage
+    setEditId(null);
+    setShowModal(false);
+
+    setFormData({
+      title: "",
+      price: "",
+      category: "",
+      date: "",
+      amount: ""
+    });
+
+    setErrors({});
+  };
+
+  // Pie chart data
+  const data = [
+    {
+      name: "Food",
+      value: expense.filter((e) => e.category === "food").reduce((sum, e) => sum + e.amount, 0)
+    },
+    {
+      name: "Travel",
+      value: expense.filter((e) => e.category === "travel").reduce((sum, e) => sum + e.amount, 0)
+    },
+    {
+      name: "Entertainment",
+      value: expense
+        .filter((e) => e.category === "entertainment")
+        .reduce((sum, e) => sum + e.amount, 0)
+    }
+  ];
+
+  const categoryIcons = {
+    food: foodIcon,
+    travel: travelIcon,
+    entertainment: entertainmentIcon
+  };
+
+  const categoryTotals = expense.reduce((acc, curr) => {
+    acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount);
+    return acc;
+  }, {});
+
+  const barData = Object.keys(categoryTotals).map((key) => ({
+    name: key,
+    value: categoryTotals[key]
+  }));
+
+  const totalExpense = expense.reduce((sum, item) => sum + item.amount, 0);
+  const maxBarValue = Math.max(...barData.map((item) => item.value), 1);
+
+  // Load from localStorage
+  useEffect(() => {
     const localBalance = localStorage.getItem("balance");
-
     if (localBalance && !isNaN(localBalance)) {
       setBalance(Number(localBalance));
     } else {
@@ -289,70 +242,24 @@ const totalExpense = expense.reduce(
 
     const items = JSON.parse(localStorage.getItem("expenses"));
     setExpense(Array.isArray(items) ? items : []);
-
     setIsMounted(true);
   }, []);
 
-  // saving expense list in localStorage
+  // Save expenses
   useEffect(() => {
-    if (expense.length > 0 || isMounted) {
+    if (isMounted) {
       localStorage.setItem("expenses", JSON.stringify(expense));
     }
+  }, [expense, isMounted]);
 
-    // if (expense.length > 0) {
-    //   setExpense(
-    //     expense.reduce(
-    //       (accumulator, currentValue) =>
-    //         accumulator + Number(currentValue.price),
-    //       0
-    //     )
-    //   );
-    // } else {
-    //   setExpense(0);
-    // }
-
-    let foodSpends = 0,
-      entertainmentSpends = 0,
-      travelSpends = 0;
-    let foodCount = 0,
-      entertainmentCount = 0,
-      travelCount = 0;
-
-    expense.forEach((item) => {
-      if (item.category === "food") {
-        foodSpends += Number(item.price);
-        foodCount++;
-      } else if (item.category === "entertainment") {
-        entertainmentSpends += Number(item.price);
-        entertainmentCount++;
-      } else if (item.category === "travel") {
-        travelSpends += Number(item.price);
-        travelCount++;
-      }
-    });
-
-    setCategorySpends({
-      food: foodSpends,
-      travel: travelSpends,
-      entertainment: entertainmentSpends,
-    });
-
-    setCategoryCount({
-      food: foodCount,
-      travel: travelCount,
-      entertainment: entertainmentCount,
-    });
-  }, [expense,isMounted]);
-
-  // saving balance in localStorage
+  // Save balance
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem("balance", balance);
     }
-  }, [balance,isMounted]);
+  }, [balance, isMounted]);
 
-
-  return (
+   return (
   <div>
     <div className="Whole-Container">
           <h1>Expense Tracker</h1>
